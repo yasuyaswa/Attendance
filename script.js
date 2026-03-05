@@ -10,11 +10,6 @@ const MONTHS=['January','February','March','April','May','June',
   const t=localStorage.getItem('theme');
   if(t){document.documentElement.setAttribute('data-theme',t);updateBtn();}
   const n=new Date();Y=n.getFullYear();M=n.getMonth()+1;
-  // debug: check that the Supabase SDK loaded and config function defined
-  console.log('supabase global:', typeof supabase, 'supabaseClient (before init):', typeof supabaseClient);
-  if(typeof initSupabase !== 'function'){
-    console.error('initSupabase is not defined – was supabase-config.js loaded?');
-  }
   initSupabase();
 })();
 
@@ -35,18 +30,13 @@ function goToday(){const n=new Date();Y=n.getFullYear();M=n.getMonth()+1;loadAnd
 // ═══ LOAD ═══
 async function loadAndRender(){
   setLoad(true);
-  console.log('📥 Loading attendance data...');
-
   try{
     if (window.useLocalStorage) {
       // LocalStorage mode
-      console.log('💾 Loading from localStorage...');
       const stored = localStorage.getItem('attendance_data');
       D = stored ? JSON.parse(stored) : {};
-      console.log('✅ Loaded local data:', D);
     } else {
       // Supabase mode
-      console.log('☁️ Loading from Supabase...');
       const { data, error } = await supabaseClient
         .from('attendance')
         .select('*');
@@ -56,15 +46,13 @@ async function loadAndRender(){
       // Convert array to object: { "2026-03-05": "office", ... }
       D = {};
       if (data) {
-        console.log(`📊 Processing ${data.length} records from database...`);
         data.forEach(record => {
           D[record.date] = record.status;
         });
       }
-      console.log('✅ Loaded Supabase data:', D);
     }
   }catch(err){
-    console.error('❌ Load error:', err);
+    console.error('Load error:', err);
     showToast('⚠ Failed to load data', true);
     D={};
   }
@@ -319,17 +307,14 @@ async function setStatus(status){
   try{
     if (window.useLocalStorage) {
       // LocalStorage mode
-      console.log('💾 Saving to localStorage...');
       if(status){
         D[date] = status;
       } else {
         delete D[date];
       }
       localStorage.setItem('attendance_data', JSON.stringify(D));
-      console.log('✅ Saved to localStorage');
     } else {
       // Supabase mode
-      console.log('☁️ Saving to Supabase...');
       if(status){
         // Insert or update
         const { data: existing } = await supabaseClient
@@ -357,7 +342,6 @@ async function setStatus(status){
           .delete()
           .eq('date', date);
       }
-      console.log('✅ Saved to Supabase');
     }
 
     // Update local display

@@ -32,11 +32,8 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 // Initialize app
 async function initSupabase() {
-  console.log('🔄 Initializing Supabase connection...');
-
   try {
-    // First test CORS with a simple preflight
-    console.log('🔍 Testing CORS and connectivity...');
+    // Test CORS with a simple preflight
     const corsTest = await fetch(`${SUPABASE_URL}/rest/v1/`, {
       method: 'OPTIONS',
       headers: {
@@ -46,28 +43,21 @@ async function initSupabase() {
     });
 
     if (!corsTest.ok && corsTest.status !== 200) {
-      console.warn('⚠️ CORS preflight failed, but continuing...');
+      console.warn('CORS preflight failed, continuing...');
     }
 
     // Test basic connectivity
-    console.log('🔍 Testing Supabase connectivity...');
     const { data: testData, error: testError } = await supabaseClient
       .from('attendance')
       .select('count')
       .limit(1);
 
-    if (testError) {
-      console.error('❌ Supabase connectivity test failed:', testError);
-      throw testError;
-    }
-
-    console.log('✅ Supabase connected successfully');
+    if (testError) throw testError;
 
     // Load initial data
     await loadAndRender();
 
     // Listen for real-time changes
-    console.log('📡 Setting up realtime subscription...');
     supabaseClient
       .channel('attendance_changes')
       .on(
@@ -78,17 +68,12 @@ async function initSupabase() {
           table: 'attendance'
         },
         (payload) => {
-          console.log('🔄 Realtime update received:', payload);
           loadAndRender();
         }
       )
-      .subscribe((status) => {
-        console.log('📡 Realtime subscription status:', status);
-      });
+      .subscribe();
 
   } catch (err) {
-    console.error('❌ Supabase initialization failed:', err);
-
     // Show user-friendly error message
     let errorMsg = 'Unknown error occurred';
     if (err.message?.includes('Failed to fetch')) {
@@ -99,10 +84,9 @@ async function initSupabase() {
       errorMsg = `Database error: ${err.message}`;
     }
 
-    alert(`❌ Failed to connect to database:\n\n${errorMsg}\n\nThe app will work in offline mode with localStorage.`);
+    alert(`Failed to connect to database:\n\n${errorMsg}\n\nThe app will work in offline mode with localStorage.`);
 
     // Fallback to localStorage
-    console.log('🔄 Falling back to localStorage...');
     window.useLocalStorage = true;
     initLocalStorage();
   }

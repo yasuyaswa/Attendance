@@ -8,59 +8,63 @@ A beautiful, interactive attendance tracking calendar with dark/light theme supp
 - 🎯 60% office attendance target with pass/fail indicator
 - 🌅 Half-day leave support
 - 📱 Fully responsive design
-- 💾 Data persists in browser (LocalStorage)
-- 🚀 No backend required - works offline!
+- ☁️ **Supabase integration** for shared data across devices
+- 💾 **LocalStorage fallback** when Supabase unavailable
+- 🚀 **GitHub Pages ready** - works online/offline
 
 ---
 
 ## 🚀 Quick Start
 
 ### Local Development
-
-1. **Open in browser:** Simply open `attendance.html` in your browser, or
-2. **Use local server** (optional):
-   ```bash
-   node server.js
-   ```
-   Then visit `http://localhost:3000`
+```bash
+node server.js
+```
+Then visit `http://localhost:3000`
 
 ### GitHub Pages Deployment
-
-1. **Create a GitHub repository** and push this code
-2. **Enable GitHub Pages:**
-   - Go to **Settings → Pages**
-   - Select **Deploy from a branch**
-   - Choose **main** branch and **/root** folder
-   - Click **Save**
-
-3. **Your app will be live at:**
-   ```
-   https://<username>.github.io/<repo-name>/
-   ```
+1. Push this code to GitHub
+2. Enable GitHub Pages in repository settings
+3. Your app will be live at: `https://<username>.github.io/<repo-name>/`
 
 ---
 
 ## 📁 File Structure
-
 ```
-attendance.html       # Main HTML markup
+index.html           # Main HTML markup
 styles.css           # All styling & themes
-script.js            # Frontend logic & localStorage
-.gitignore          # Git ignore rules
-README.md           # This file
-server.js           # Optional: local development server
-attendance.json     # Optional: initial data seed
+script.js            # Frontend logic
+supabase-config.js   # Supabase configuration & localStorage fallback
+server.js            # Local development server
+README.md           # This documentation
 ```
 
 ---
 
-## 💡 How It Works
+## ☁️ Data Storage
 
-### Data Storage
-- **Browser LocalStorage** stores all attendance data
-- Data persists across browser sessions
-- No account required
-- Each browser/device has separate data
+The app uses **Supabase** for shared data storage, with automatic fallback to **localStorage**:
+
+- **Supabase Mode**: Data syncs across devices (requires network access)
+- **LocalStorage Mode**: Offline-first, data stored in browser
+
+### Supabase Setup
+1. Create free account at [supabase.com](https://supabase.com)
+2. Create new project
+3. Go to **Settings → API**
+4. Add authorized domains:
+   - `http://localhost:3000` (local development)
+   - `https://<username>.github.io` (GitHub Pages)
+5. Copy URL and anon key to `supabase-config.js`
+6. Create `attendance` table with columns: `id` (auto), `date` (text), `status` (text)
+
+---
+
+## 🎯 How It Works
+- Click any date to mark attendance
+- Choose from: Office, WFH, Leave, Holiday, or Half-day options
+- View statistics and 60% office target progress
+- Data automatically saves and syncs (when Supabase available)
 
 ### Tracking Options
 - **Office** - Full day in office
@@ -73,94 +77,40 @@ attendance.json     # Optional: initial data seed
 - **Target:** 60% of working days in office
 - **Current month:** Judges only days up to today
 - **Past/future months:** Judges full month
-- Automatically excludes weekends, leaves, and holidays from calculation
+- Automatically excludes weekends, leaves, and holidays
 
 ---
 
 ## 🎨 Customization
 
-### Change Theme Colors
-Edit `styles.css` - Look for the theme tokens section:
-```css
-:root, [data-theme="light"] {
-  --accent: #2563eb;      /* Change primary color */
-  --c-office: #2563eb;    /* Office color */
-  --c-wfh: #059669;       /* WFH color */
-  --c-leave: #d97706;     /* Leave color */
-  --c-hday: #7c3aed;      /* Holiday color */
-  /* ... more colors ... */
-}
-```
-
 ### Change Office Target
-Edit `script.js`, find the pass/fail logic:
+Edit `script.js`, find:
 ```javascript
-const tgt = eff * 0.6;  // Change 0.6 to desired percentage (e.g., 0.7 for 70%)
+const tgt = eff * 0.6;  // Change 0.6 to desired percentage
 ```
 
----
-
-## 📝 Usage
-
-### Mark a Day
-1. Click on any workday (non-weekend) in the calendar
-2. Select the attendance type from the popup
-3. Changes auto-save to browser storage
-
-### Clear a Day
-1. Click on the marked day
-2. Select "Clear / Unmark"
-
-### Add Holiday
-1. Click on a day
-2. Select "Holiday"
-3. Enter the holiday name
-4. Click "✓ Save Holiday"
-
-### Half-Day Leave
-1. Click on a day
-2. Select "First Half Leave (AM)" or "Second Half Leave (PM)"
-3. Choose the work mode for the other half (Office or WFH)
+### Change Colors
+Edit `styles.css` - modify the CSS custom properties in the `:root` section.
 
 ---
 
 ## 🌐 Browser Support
-
 - Chrome/Edge 90+
 - Firefox 88+
 - Safari 14+
-- Mobile browsers (iOS Safari, Chrome Mobile)
+- Mobile browsers
 
 ---
 
 ## 📊 Data Backup
-
-To backup your data:
-1. Open browser DevTools (F12)
-2. Go to **Console**
-3. Run: `copy(localStorage.getItem('attendance_data'))`
-4. Paste into a text file to save
+To backup localStorage data:
+1. Open DevTools Console (F12)
+2. Run: `copy(localStorage.getItem('attendance_data'))`
+3. Save the copied data to a file
 
 To restore:
-1. Open DevTools Console
-2. Run: `localStorage.setItem('attendance_data', '<PASTE_YOUR_DATA_HERE>')`
-3. Refresh the page
-
----
-
-## 🔧 Local Server Setup (Optional)
-
-For multi-user shared data:
-
-```bash
-# Install Node.js (if not already installed)
-# Run the server:
-node server.js
-
-# Visit http://localhost:3000
-```
-
-**Note:** Server.js is for local development only. GitHub Pages doesn't support backends.
+1. Run: `localStorage.setItem('attendance_data', 'PASTE_YOUR_DATA_HERE')`
+2. Refresh the page
 
 ---
 
