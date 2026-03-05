@@ -6,5 +6,9 @@ node_modules/
 .vscode/
 .idea/
 *.log
-attendance.json
+.env
+.env.local
 server.js
+attendance.json
+DEPLOYMENT.md
+

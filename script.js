@@ -10,7 +10,7 @@ const MONTHS=['January','February','March','April','May','June',
   const t=localStorage.getItem('theme');
   if(t){document.documentElement.setAttribute('data-theme',t);updateBtn();}
   const n=new Date();Y=n.getFullYear();M=n.getMonth()+1;
-  loadAndRender();
+  initSupabase();
 })();
 
 function toggleTheme(){
@@ -30,9 +30,26 @@ function goToday(){const n=new Date();Y=n.getFullYear();M=n.getMonth()+1;loadAnd
 // ═══ LOAD ═══
 async function loadAndRender(){
   setLoad(true);
-  try{const r=await fetch(`/api/attendance`);D=r.ok?((await r.json()).data||{}):{}}
-  catch{D={};}
-  setLoad(false);render();
+  try{
+    const { data, error } = await supabaseClient
+      .from('attendance')
+      .select('*');
+    
+    if (error) throw error;
+    
+    // Convert array to object: { "2026-03-05": "office", ... }
+    D = {};
+    if (data) {
+      data.forEach(record => {
+        D[record.date] = record.status;
+      });
+    }
+  }catch(err){
+    console.error('Load error:', err);
+    D={};
+  }
+  setLoad(false);
+  render();
 }
 
 // ═══ RENDER ═══
@@ -279,15 +296,41 @@ async function setStatus(status){
   const date=pickerDs; closePicker();
   setLoad(true);
   try{
-    const r=await fetch('/api/attendance',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({date,status:status||null})
-    });
-    if(r.ok){
-      if(status) D[date]=status; else delete D[date];
-      render(); showToast(toastMsg(status));
-    } else showToast('⚠ Failed to save',true);
-  }catch{showToast('⚠ Network error',true);}
+    if(status){
+      // Insert or update
+      const { data: existing } = await supabaseClient
+        .from('attendance')
+        .select('id')
+        .eq('date', date)
+        .single();
+      
+      if(existing){
+        // Update existing
+        await supabaseClient
+          .from('attendance')
+          .update({ status })
+          .eq('date', date);
+      } else {
+        // Insert new
+        await supabaseClient
+          .from('attendance')
+          .insert({ date, status });
+      }
+    } else {
+      // Delete
+      await supabaseClient
+        .from('attendance')
+        .delete()
+        .eq('date', date);
+    }
+    
+    // Update local data
+    if(status) D[date]=status; else delete D[date];
+    render(); showToast(toastMsg(status));
+  }catch(err){
+    console.error('Save error:', err);
+    showToast('⚠ Failed to save',true);
+  }
   setLoad(false);
 }
 function toastMsg(s){
