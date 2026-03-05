@@ -35,36 +35,16 @@ function goToday(){const n=new Date();Y=n.getFullYear();M=n.getMonth()+1;loadAnd
 // ═══ LOAD ═══
 async function loadAndRender(){
   setLoad(true);
-  console.log('Starting loadAndRender...');
+  console.log('Loading data from localStorage...');
   try{
-    console.log('Making Supabase query...');
-    const { data, error } = await supabaseClient
-      .from('attendance')
-      .select('*');
-    
-    console.log('Query result:', { data, error });
-    
-    if (error) {
-      console.error('Supabase query error:', error);
-      throw error;
-    }
-    
-    // Convert array to object: { "2026-03-05": "office", ... }
+    // Convert object to array format expected by render
     D = {};
-    if (data) {
-      console.log(`Processing ${data.length} records...`);
-      data.forEach(record => {
-        console.log('Processing record:', record);
-        D[record.date] = record.status;
-      });
-    } else {
-      console.log('No data returned from query');
-    }
-    
-    console.log('Final D object:', D);
+    Object.keys(localData).forEach(date => {
+      D[date] = localData[date];
+    });
+    console.log('Loaded data:', D);
   }catch(err){
     console.error('Load error:', err);
-    showToast('⚠ Failed to load data', true);
     D={};
   }
   setLoad(false);
@@ -316,34 +296,17 @@ async function setStatus(status){
   setLoad(true);
   try{
     if(status){
-      // Insert or update
-      const { data: existing } = await supabaseClient
-        .from('attendance')
-        .select('id')
-        .eq('date', date)
-        .single();
-      
-      if(existing){
-        // Update existing
-        await supabaseClient
-          .from('attendance')
-          .update({ status })
-          .eq('date', date);
-      } else {
-        // Insert new
-        await supabaseClient
-          .from('attendance')
-          .insert({ date, status });
-      }
+      // Update local data
+      localData[date] = status;
     } else {
       // Delete
-      await supabaseClient
-        .from('attendance')
-        .delete()
-        .eq('date', date);
+      delete localData[date];
     }
     
-    // Update local data
+    // Save to localStorage
+    saveLocalData();
+    
+    // Update local display
     if(status) D[date]=status; else delete D[date];
     render(); showToast(toastMsg(status));
   }catch(err){

@@ -1,45 +1,38 @@
 // ═══════════════════════════════════════════════════════════
-// SUPABASE CONFIGURATION
+// LOCAL STORAGE CONFIGURATION (FALLBACK)
 // ═══════════════════════════════════════════════════════════
-// 
-// Get these values from Supabase:
-// 1. Go to https://supabase.com (free sign up)
-// 2. Create a new project
-// 3. Go to Settings → API
-// 4. Copy the ANON KEY and PROJECT URL below
-//
-// ═══════════════════════════════════════════════════════════
+// Since Supabase connection is blocked by network/firewall,
+// we're using localStorage for data persistence.
+// This works offline and across browser sessions on the same device.
 
-const SUPABASE_URL = "https://zhnyfqmdlpqxbpheumkd.supabase.co";  // e.g., https://xxxxx.supabase.co
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpobnlmcW1kbHBxeGJwaGV1bWtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MDc4MzAsImV4cCI6MjA4ODI4MzgzMH0.jEBrFm94v9LB0WBmZFwKy22vkRSz9oLL8Fq-dv3MI-o";
+let localData = {};
 
-// Initialize Supabase client
-const { createClient } = supabase;
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// Initialize app
-async function initSupabase() {
+// Load data from localStorage
+function loadLocalData() {
   try {
-    // Load initial data
-    await loadAndRender();
-    
-    // Listen for real-time changes
-    supabaseClient
-      .channel('attendance_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'attendance'
-        },
-        (payload) => {
-          // Reload data when database changes
-          loadAndRender();
-        }
-      )
-      .subscribe();
+    const stored = localStorage.getItem('attendance_data');
+    if (stored) {
+      localData = JSON.parse(stored);
+    }
   } catch (err) {
-    console.error('Supabase init error:', err);
+    console.warn('Failed to load local data:', err);
+    localData = {};
   }
+}
+
+// Save data to localStorage
+function saveLocalData() {
+  try {
+    localStorage.setItem('attendance_data', JSON.stringify(localData));
+  } catch (err) {
+    console.error('Failed to save local data:', err);
+  }
+}
+
+// Initialize app (localStorage version)
+async function initSupabase() {
+  loadLocalData();
+  await loadAndRender();
+
+  // No realtime needed for localStorage
 }
