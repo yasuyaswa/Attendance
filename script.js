@@ -370,7 +370,7 @@ function toggleAbout(){
   const isOpen=overlay.classList.toggle('open');
   modal.classList.toggle('visible',isOpen);
   if(isOpen && !aboutLoaded){
-    fetch('/README.md').then(r=>r.text()).then(t=>{
+    fetch('./README.md').then(r=>r.text()).then(t=>{
       document.getElementById('aboutContent').textContent=t;
       aboutLoaded=true;
     }).catch(()=>{
