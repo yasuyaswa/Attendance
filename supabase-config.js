@@ -33,19 +33,6 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 // Initialize app
 async function initSupabase() {
   try {
-    // Test CORS with a simple preflight
-    const corsTest = await fetch(`${SUPABASE_URL}/rest/v1/`, {
-      method: 'OPTIONS',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-      }
-    });
-
-    if (!corsTest.ok && corsTest.status !== 200) {
-      console.warn('CORS preflight failed, continuing...');
-    }
-
     // Test basic connectivity
     const { data: testData, error: testError } = await supabaseClient
       .from('attendance')
@@ -89,6 +76,8 @@ async function initSupabase() {
     // Fallback to localStorage
     window.useLocalStorage = true;
     initLocalStorage();
+    // Load data in localStorage mode
+    await loadAndRender();
   }
 }
 
