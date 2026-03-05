@@ -59,8 +59,22 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (pathname === '/script.js') {
-    const filePath = path.join(__dirname, 'script.js');
+  if (pathname === '/script.js' || pathname === '/supabase-config.js') {
+    // serve main script or Supabase configuration
+    const filePath = path.join(__dirname, pathname.slice(1));
+    serveStatic(filePath, res);
+    return;
+  }
+
+  if (pathname === '/README.md') {
+    const filePath = path.join(__dirname, 'README.md');
+    serveStatic(filePath, res);
+    return;
+  }
+
+  // Generic static JS fallback: serve any .js file in the root
+  if (pathname.endsWith('.js')) {
+    const filePath = path.join(__dirname, pathname);
     serveStatic(filePath, res);
     return;
   }

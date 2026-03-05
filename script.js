@@ -10,6 +10,11 @@ const MONTHS=['January','February','March','April','May','June',
   const t=localStorage.getItem('theme');
   if(t){document.documentElement.setAttribute('data-theme',t);updateBtn();}
   const n=new Date();Y=n.getFullYear();M=n.getMonth()+1;
+  // debug: check that the Supabase SDK loaded and config function defined
+  console.log('supabase global:', typeof supabase, 'supabaseClient (before init):', typeof supabaseClient);
+  if(typeof initSupabase !== 'function'){
+    console.error('initSupabase is not defined – was supabase-config.js loaded?');
+  }
   initSupabase();
 })();
 
@@ -46,6 +51,7 @@ async function loadAndRender(){
     }
   }catch(err){
     console.error('Load error:', err);
+    showToast('⚠ Failed to load data', true);
     D={};
   }
   setLoad(false);
@@ -354,4 +360,21 @@ function showToast(msg,err){
   el.textContent=msg; el.style.borderColor=err?'var(--c-fail)':'var(--border)';
   el.classList.add('show'); clearTimeout(toastT);
   toastT=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// ═══ ABOUT PANEL ═══
+let aboutLoaded=false;
+function toggleAbout(){
+  const overlay=document.getElementById('aboutOverlay');
+  const modal=document.getElementById('aboutModal');
+  const isOpen=overlay.classList.toggle('open');
+  modal.classList.toggle('visible',isOpen);
+  if(isOpen && !aboutLoaded){
+    fetch('/README.md').then(r=>r.text()).then(t=>{
+      document.getElementById('aboutContent').textContent=t;
+      aboutLoaded=true;
+    }).catch(()=>{
+      document.getElementById('aboutContent').textContent='Unable to load documentation.';
+    });
+  }
 }
