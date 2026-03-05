@@ -30,7 +30,7 @@ function goToday(){const n=new Date();Y=n.getFullYear();M=n.getMonth()+1;loadAnd
 // ═══ LOAD ═══
 async function loadAndRender(){
   setLoad(true);
-  try{const r=await fetch(`/api/attendance?year=${Y}&month=${M}`);D=r.ok?((await r.json()).data||{}):{}}
+  try{const r=await fetch(`/api/attendance`);D=r.ok?((await r.json()).data||{}):{}}
   catch{D={};}
   setLoad(false);render();
 }
