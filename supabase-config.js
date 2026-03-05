@@ -19,13 +19,36 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Initialize Supabase client
 const { createClient } = supabase;
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: false
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'attendance-calendar'
+    }
+  }
+});
 
 // Initialize app
 async function initSupabase() {
   console.log('🔄 Initializing Supabase connection...');
 
   try {
+    // First test CORS with a simple preflight
+    console.log('🔍 Testing CORS and connectivity...');
+    const corsTest = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+      method: 'OPTIONS',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      }
+    });
+
+    if (!corsTest.ok && corsTest.status !== 200) {
+      console.warn('⚠️ CORS preflight failed, but continuing...');
+    }
+
     // Test basic connectivity
     console.log('🔍 Testing Supabase connectivity...');
     const { data: testData, error: testError } = await supabaseClient
@@ -67,9 +90,14 @@ async function initSupabase() {
     console.error('❌ Supabase initialization failed:', err);
 
     // Show user-friendly error message
-    const errorMsg = err.message?.includes('Failed to fetch')
-      ? 'Network error: Cannot connect to Supabase. Check your internet connection and firewall settings.'
-      : `Database error: ${err.message || 'Unknown error'}`;
+    let errorMsg = 'Unknown error occurred';
+    if (err.message?.includes('Failed to fetch')) {
+      errorMsg = 'Network error: Cannot connect to Supabase. Check your internet connection and firewall settings.';
+    } else if (err.message?.includes('CORS') || err.message?.includes('cross-origin')) {
+      errorMsg = 'CORS error: Add your domain to Supabase authorized domains. Go to Settings → API → Authorized domains and add: https://yasuyaswa.github.io';
+    } else if (err.message) {
+      errorMsg = `Database error: ${err.message}`;
+    }
 
     alert(`❌ Failed to connect to database:\n\n${errorMsg}\n\nThe app will work in offline mode with localStorage.`);
 
