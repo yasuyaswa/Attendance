@@ -35,20 +35,33 @@ function goToday(){const n=new Date();Y=n.getFullYear();M=n.getMonth()+1;loadAnd
 // ═══ LOAD ═══
 async function loadAndRender(){
   setLoad(true);
+  console.log('Starting loadAndRender...');
   try{
+    console.log('Making Supabase query...');
     const { data, error } = await supabaseClient
       .from('attendance')
       .select('*');
     
-    if (error) throw error;
+    console.log('Query result:', { data, error });
+    
+    if (error) {
+      console.error('Supabase query error:', error);
+      throw error;
+    }
     
     // Convert array to object: { "2026-03-05": "office", ... }
     D = {};
     if (data) {
+      console.log(`Processing ${data.length} records...`);
       data.forEach(record => {
+        console.log('Processing record:', record);
         D[record.date] = record.status;
       });
+    } else {
+      console.log('No data returned from query');
     }
+    
+    console.log('Final D object:', D);
   }catch(err){
     console.error('Load error:', err);
     showToast('⚠ Failed to load data', true);
