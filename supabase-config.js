@@ -1,38 +1,87 @@
 // ═══════════════════════════════════════════════════════════
-// LOCAL STORAGE CONFIGURATION (FALLBACK)
+// SUPABASE CONFIGURATION
 // ═══════════════════════════════════════════════════════════
-// Since Supabase connection is blocked by network/firewall,
-// we're using localStorage for data persistence.
-// This works offline and across browser sessions on the same device.
+//
+// Get these values from Supabase:
+// 1. Go to https://supabase.com (free sign up)
+// 2. Create a new project
+// 3. Go to Settings → API
+// 4. Copy the ANON KEY and PROJECT URL below
+//
+// IMPORTANT: Add these domains to "Authorized domains" in Supabase:
+// - http://localhost:3000 (for local testing)
+// - https://yasuyaswa.github.io (for GitHub Pages)
+//
+// ═══════════════════════════════════════════════════════════
 
-let localData = {};
+const SUPABASE_URL = "https://zhnyfqmdlpqxbpheumkd.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpobnlmcW1kbHBxeGJwaGV1bWtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MDc4MzAsImV4cCI6MjA4ODI4MzgzMH0.jEBrFm94v9LB0WBmZFwKy22vkRSz9oLL8Fq-dv3MI-o";
 
-// Load data from localStorage
-function loadLocalData() {
-  try {
-    const stored = localStorage.getItem('attendance_data');
-    if (stored) {
-      localData = JSON.parse(stored);
-    }
-  } catch (err) {
-    console.warn('Failed to load local data:', err);
-    localData = {};
-  }
-}
+// Initialize Supabase client
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Save data to localStorage
-function saveLocalData() {
-  try {
-    localStorage.setItem('attendance_data', JSON.stringify(localData));
-  } catch (err) {
-    console.error('Failed to save local data:', err);
-  }
-}
-
-// Initialize app (localStorage version)
+// Initialize app
 async function initSupabase() {
-  loadLocalData();
-  await loadAndRender();
+  console.log('🔄 Initializing Supabase connection...');
 
-  // No realtime needed for localStorage
+  try {
+    // Test basic connectivity
+    console.log('🔍 Testing Supabase connectivity...');
+    const { data: testData, error: testError } = await supabaseClient
+      .from('attendance')
+      .select('count')
+      .limit(1);
+
+    if (testError) {
+      console.error('❌ Supabase connectivity test failed:', testError);
+      throw testError;
+    }
+
+    console.log('✅ Supabase connected successfully');
+
+    // Load initial data
+    await loadAndRender();
+
+    // Listen for real-time changes
+    console.log('📡 Setting up realtime subscription...');
+    supabaseClient
+      .channel('attendance_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendance'
+        },
+        (payload) => {
+          console.log('🔄 Realtime update received:', payload);
+          loadAndRender();
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Realtime subscription status:', status);
+      });
+
+  } catch (err) {
+    console.error('❌ Supabase initialization failed:', err);
+
+    // Show user-friendly error message
+    const errorMsg = err.message?.includes('Failed to fetch')
+      ? 'Network error: Cannot connect to Supabase. Check your internet connection and firewall settings.'
+      : `Database error: ${err.message || 'Unknown error'}`;
+
+    alert(`❌ Failed to connect to database:\n\n${errorMsg}\n\nThe app will work in offline mode with localStorage.`);
+
+    // Fallback to localStorage
+    console.log('🔄 Falling back to localStorage...');
+    window.useLocalStorage = true;
+    initLocalStorage();
+  }
+}
+
+// LocalStorage fallback
+function initLocalStorage() {
+  console.log('💾 Using localStorage for data storage');
+  // This will be called if Supabase fails
 }

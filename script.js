@@ -35,16 +35,37 @@ function goToday(){const n=new Date();Y=n.getFullYear();M=n.getMonth()+1;loadAnd
 // ═══ LOAD ═══
 async function loadAndRender(){
   setLoad(true);
-  console.log('Loading data from localStorage...');
+  console.log('📥 Loading attendance data...');
+
   try{
-    // Convert object to array format expected by render
-    D = {};
-    Object.keys(localData).forEach(date => {
-      D[date] = localData[date];
-    });
-    console.log('Loaded data:', D);
+    if (window.useLocalStorage) {
+      // LocalStorage mode
+      console.log('💾 Loading from localStorage...');
+      const stored = localStorage.getItem('attendance_data');
+      D = stored ? JSON.parse(stored) : {};
+      console.log('✅ Loaded local data:', D);
+    } else {
+      // Supabase mode
+      console.log('☁️ Loading from Supabase...');
+      const { data, error } = await supabaseClient
+        .from('attendance')
+        .select('*');
+
+      if (error) throw error;
+
+      // Convert array to object: { "2026-03-05": "office", ... }
+      D = {};
+      if (data) {
+        console.log(`📊 Processing ${data.length} records from database...`);
+        data.forEach(record => {
+          D[record.date] = record.status;
+        });
+      }
+      console.log('✅ Loaded Supabase data:', D);
+    }
   }catch(err){
-    console.error('Load error:', err);
+    console.error('❌ Load error:', err);
+    showToast('⚠ Failed to load data', true);
     D={};
   }
   setLoad(false);
@@ -294,23 +315,55 @@ async function setStatus(status){
   if(!pickerDs) return;
   const date=pickerDs; closePicker();
   setLoad(true);
+
   try{
-    if(status){
-      // Update local data
-      localData[date] = status;
+    if (window.useLocalStorage) {
+      // LocalStorage mode
+      console.log('💾 Saving to localStorage...');
+      if(status){
+        D[date] = status;
+      } else {
+        delete D[date];
+      }
+      localStorage.setItem('attendance_data', JSON.stringify(D));
+      console.log('✅ Saved to localStorage');
     } else {
-      // Delete
-      delete localData[date];
+      // Supabase mode
+      console.log('☁️ Saving to Supabase...');
+      if(status){
+        // Insert or update
+        const { data: existing } = await supabaseClient
+          .from('attendance')
+          .select('id')
+          .eq('date', date)
+          .single();
+
+        if(existing){
+          // Update existing
+          await supabaseClient
+            .from('attendance')
+            .update({ status })
+            .eq('date', date);
+        } else {
+          // Insert new
+          await supabaseClient
+            .from('attendance')
+            .insert({ date, status });
+        }
+      } else {
+        // Delete
+        await supabaseClient
+          .from('attendance')
+          .delete()
+          .eq('date', date);
+      }
+      console.log('✅ Saved to Supabase');
     }
-    
-    // Save to localStorage
-    saveLocalData();
-    
+
     // Update local display
-    if(status) D[date]=status; else delete D[date];
     render(); showToast(toastMsg(status));
   }catch(err){
-    console.error('Save error:', err);
+    console.error('❌ Save error:', err);
     showToast('⚠ Failed to save',true);
   }
   setLoad(false);
@@ -353,4 +406,11 @@ function toggleAbout(){
       document.getElementById('aboutContent').textContent='Unable to load documentation.';
     });
   }
+}
+
+// ═══ LOCALSTORAGE FALLBACK ═══
+function initLocalStorage() {
+  console.log('💾 Initializing localStorage fallback...');
+  // Load any existing data
+  loadAndRender();
 }
